@@ -205,7 +205,7 @@
     const loader = document.querySelector('.loader');
     let ALL_CLASSES_LIST = [];
     let CURRENT_CLASS_DETAILS = null;
-    let CURRENT_DASHBOARD_LOGS = []; // ✨ **แก้ไขจุดที่ 1:** สร้างตัวแปรสำหรับเก็บข้อมูล Dashboard
+    let CURRENT_DASHBOARD_LOGS = []; 
 
     // --- Core Functions ---
     async function callGAS(action, payload = {}) {
@@ -334,11 +334,10 @@
 
     // --- Dashboard Page ---
     async function loadDashboard() {
-        CURRENT_DASHBOARD_LOGS = await callGAS('getAllLogs'); // ✨ **แก้ไขจุดที่ 2:** เก็บข้อมูลที่ดึงมาในตัวแปร
-        sortAndRenderDashboard('logDate'); // จัดเรียงตามวันที่สอนเป็นค่าเริ่มต้น
+        CURRENT_DASHBOARD_LOGS = await callGAS('getAllLogs');
+        sortAndRenderDashboard('logDate'); 
     }
     
-    // ✨ **แก้ไขจุดที่ 3:** แก้ไขฟังก์ชัน renderDashboard ให้ใช้ข้อมูลจากตัวแปร และแก้ onclick ของปุ่ม
     function renderDashboard() {
         const page = document.getElementById('dashboard-content');
         page.innerHTML = `<div style="padding: 15px;">
@@ -351,12 +350,18 @@
         </div>`;
     }
 
-    function renderDashboardLogItem(log) { const logDateFormatted = new Date(log.logDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }); const timestampFormatted = new Date(log.timestamp).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); return `<div class="dashboard-log-item"><h3>${logDateFormatted} - ${log.className}</h3><p>${log.content}</p><small>แก้ไขล่าสุด: ${timestampFormatted}</small></div>`; }
+    function renderDashboardLogItem(log) {
+        const logDateFormatted = new Date(log.logDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+        const timestampFormatted = new Date(log.timestamp).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return `<div class="dashboard-log-item">
+                    <h3>${logDateFormatted} - ${log.className}</h3>
+                    <p>${log.logContent}</p> <small>แก้ไขล่าสุด: ${timestampFormatted}</small>
+                </div>`;
+    }
     
-    // ✨ **แก้ไขจุดที่ 4:** แก้ไขฟังก์ชัน sort ให้ใช้ข้อมูลจากตัวแปร
     function sortAndRenderDashboard(sortBy) {
         CURRENT_DASHBOARD_LOGS.sort((a, b) => new Date(b[sortBy]) - new Date(a[sortBy]));
-        renderDashboard(); // เรียก render ใหม่เพื่อแสดงผลข้อมูลที่จัดเรียงแล้ว
+        renderDashboard();
     }
 
     // --- SVG Icon Logic ---
