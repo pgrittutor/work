@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PGRITTUTOR</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
+        /* CSS ทั้งหมดเหมือนเดิม ไม่มีการเปลี่ยนแปลง */
         :root {
             --pgrittutor-blue: #00008B; --pgrittutor-light-blue: #007AFF; --pgrittutor-white: #FFFFFF;
             --pgrittutor-light-gray: #F5F5F7; --pgrittutor-dark-gray: #1C1C1E; --pgrittutor-medium-gray: #8A8A8E;
@@ -17,20 +19,11 @@
         .app-container { display: none; flex-direction: column; height: 100%; opacity: 0; transition: opacity 0.5s ease-in; }
         .page { flex-grow: 1; overflow-y: auto; display: none; padding-bottom: 70px; }
         .page.active { display: block; }
-
-        /* ✨ New Loading Screen */
-        #loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--pgrittutor-blue); z-index: 1000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.5s ease-out;
-        }
+        #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--pgrittutor-blue); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease-out; }
         #loading-logo { width: 150px; margin-bottom: 30px; }
         #progress-bar-container { width: 70%; max-width: 300px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
         #progress-bar { width: 0%; height: 100%; background: var(--pgrittutor-white); border-radius: 4px; transition: width 0.4s ease-out; }
         #loading-text { color: var(--pgrittutor-white); margin-top: 15px; font-weight: 500; font-size: 16px; }
-
-        /* Other styles are the same, just condensed */
         .page-header { padding: 15px; background-color: rgba(255,255,255,0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--pgrittutor-border); position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; }
         .page-header h1 { font-size: 20px; margin: 0; font-weight: 600; color: var(--pgrittutor-dark-gray); }
         .logo-header { height: 28px; display: block; margin: 0 auto; }
@@ -59,17 +52,20 @@
         .student-type-badge { font-size: 0.7em; padding: 3px 8px; border-radius: 12px; color: white; margin-left: 8px; font-weight: 600; display: inline-flex; align-items: center; }
         .badge-live { background-color: #34C759; } .badge-online { background-color: #FF9500; }
         .dashboard-log-item { padding: 16px; margin-bottom: 10px; background: var(--pgrittutor-white); border-radius: 12px; box-shadow: var(--shadow-light); }
+        .dashboard-log-item h3 { font-size: 16px; margin: 0 0 5px; color: var(--pgrittutor-blue); } .dashboard-log-item p { font-size: 14px; margin: 0 0 5px; } .dashboard-log-item small { font-size: 11px; color: var(--pgrittutor-medium-gray); }
+        .loader { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 15px 20px; border-radius: 8px; display: none; z-index: 1001; font-size: 14px; }
+        .welcome-message { text-align: center; color: var(--pgrittutor-medium-gray); padding: 50px 15px; background: var(--pgrittutor-white); border-radius: 12px; margin: 15px; box-shadow: var(--shadow-light); }
         @supports (padding-top: env(safe-area-inset-top)) { body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); } .page-header { padding-top: calc(15px + env(safe-area-inset-top)); } .bottom-nav { padding-bottom: env(safe-area-inset-bottom); } }
     </style>
 </head>
 <body>
     <div id="loading-screen">
         <img id="loading-logo" src="https://pgrittutor.com/wp-content/uploads/2024/05/logo_4k-removebg-preview.webp" alt="PGRITTUTOR Logo">
-        <div id="progress-bar-container">
-            <div id="progress-bar"></div>
-        </div>
+        <div id="progress-bar-container"><div id="progress-bar"></div></div>
         <div id="loading-text">Loading... 0%</div>
     </div>
+
+    <div class="loader">กำลังบันทึก...</div>
 
     <div class="app-container">
         <div id="classes-page" class="page active"> <div class="page-header"><img src="" alt="PGRITTUTOR Logo" class="logo-header"></div> <div id="class-list-container"></div> <div class="fab" onclick="showAddClassModal()">+</div> </div>
@@ -85,12 +81,14 @@
     <div id="form-modal" class="modal-overlay" onclick="closeModal(event)"><div class="modal-content" id="modal-container"></div></div>
 
 <script>
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1pojd2Zb0JfwT4fc9SzihZFi4axhagJQ7Xaomktc_fNG_1Rr07ZATeMzpDGxFodPy/exec'; // 🔗 วาง URL ของ Google Apps Script ของคุณที่นี่!
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1pojd2Zb0JfwT4fc9SzihZFi4axhagJQ7Xaomktc_fNG_1Rr07ZATeMzpDGxFodPy/exec';
     const LOGO_URL = 'https://pgrittutor.com/wp-content/uploads/2024/05/logo_4k-removebg-preview.webp';
     
-    // ✨ Cache variable
+    // ✨ แก้ไขจุดที่ 3: ย้ายการประกาศตัวแปร loader มาไว้ตรงนี้
+    const loader = document.querySelector('.loader'); 
     let APP_DATA = {}; 
     let CURRENT_CLASS_DETAILS = null;
+    let CURRENT_DASHBOARD_LOGS = [];
 
     // --- Loading Animation & Initial Load ---
     window.onload = () => {
@@ -108,133 +106,78 @@
             }
         }, 200);
 
-        callGAS('getInitialData').then(data => {
+        // ✨ แก้ไขจุดที่ 4: เรียก callGAS โดยไม่แสดง loader ตัวเล็ก
+        callGAS('getInitialData', {}, false).then(data => {
             clearInterval(fakeProgressInterval);
             progressBar.style.width = '100%';
             loadingText.textContent = 'Complete! 100%';
 
-            APP_DATA = data; // Store all data in the cache
+            if(data) {
+                APP_DATA = data;
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById('loading-screen');
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.addEventListener('transitionend', () => loadingScreen.style.display = 'none');
 
-            setTimeout(() => {
-                const loadingScreen = document.getElementById('loading-screen');
-                loadingScreen.style.opacity = '0';
-                loadingScreen.addEventListener('transitionend', () => loadingScreen.style.display = 'none');
+                    const appContainer = document.querySelector('.app-container');
+                    appContainer.style.display = 'flex';
+                    setTimeout(() => appContainer.style.opacity = '1', 50);
 
-                const appContainer = document.querySelector('.app-container');
-                appContainer.style.display = 'flex';
-                setTimeout(() => appContainer.style.opacity = '1', 50);
-
-                navigateTo('classes-page');
-            }, 500);
+                    navigateTo('classes-page');
+                }, 500);
+            } else {
+                loadingText.textContent = 'Error: Could not load data.';
+            }
         });
     };
     
-    // --- Core & Navigation (Now reads from Cache) ---
-    async function callGAS(action, payload = {}) {
-        // This function is now mostly for *writing* data
-        const loader = document.querySelector('.loader'); // A smaller loader for quick actions
-        loader.style.display = 'flex';
+    // ✨ แก้ไขจุดที่ 5: ปรับปรุงฟังก์ชัน callGAS ให้รับค่าว่าจะแสดง loader หรือไม่
+    async function callGAS(action, payload = {}, showLoader = true) {
+        if (showLoader && loader) loader.style.display = 'block';
         try {
             const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'cors', body: JSON.stringify({ action, payload }) });
             const result = await response.json();
             if (result.status === 'error') throw new Error(result.message);
             return result.data;
-        } catch (error) { console.error('GAS Call Error:', error); alert('เกิดข้อผิดพลาด: ' + error.message); return null;
-        } finally { loader.style.display = 'none'; }
+        } catch (error) {
+            console.error('GAS Call Error:', error);
+            alert('เกิดข้อผิดพลาด: ' + error.message);
+            return null;
+        } finally {
+            if (showLoader && loader) loader.style.display = 'none';
+        }
     }
 
-    function navigateTo(pageId) { /* ... Same as before ... */ }
-    function renderClassList() { /* ... Same as before ... */ }
-    function initSortable() { /* ... Same as before ... */ }
-    
-    // ✨ Load details from Cache (SUPER FAST!)
-    function loadClassDetails(classId) {
-        const classInfo = APP_DATA.classes.find(c => c.classId === classId);
-        if (!classInfo) return;
-        
-        CURRENT_CLASS_DETAILS = {
-            ...classInfo,
-            students: APP_DATA.students[classId] || [],
-            logs: APP_DATA.logs[classId] || []
-        };
-        
-        renderDetailsPage();
-        navigateTo('details-page');
-        switchTab('schedule');
-    }
-    
-    function renderDetailsPage() { /* ... Same as before ... */ }
-    function switchTab(tabName) { /* ... Same as before ... */ }
-    function renderStudentItem(s) { /* ... Same as before ... */ }
-    function renderLogItem(log) { /* ... Same as before ... */ }
+    // --- Navigation & Other Functions (ส่วนนี้เหมือนเดิมทั้งหมด) ---
+    function navigateTo(pageId) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(pageId).classList.add('active'); const navId = (pageId === 'details-page') ? 'nav-classes' : `nav-${pageId.split('-')[0]}`; document.querySelectorAll('.bottom-nav .nav-item').forEach(n => { n.classList.toggle('active', n.id === navId); }); updateNavIcons(); if (pageId === 'dashboard-page') loadDashboard(); if (pageId === 'classes-page') renderClassList(); }
+    function renderClassList() { const container = document.getElementById('class-list-container'); if (!APP_DATA.classes || APP_DATA.classes.length === 0) { container.innerHTML = `<div class="welcome-message"><h2>ยังไม่มีคลาสเรียน</h2><p>กดปุ่ม + ด้านล่างเพื่อเพิ่มคลาสแรกของคุณ</p></div>`; } else { container.innerHTML = `<div class="list-group" id="sortable-class-list">${APP_DATA.classes.map(cls => `<div class="list-item" data-class-id="${cls.classId}" onclick="loadClassDetails('${cls.classId}')"><div><h3>${cls.className}</h3></div><span class="arrow">&gt;</span></div>`).join('')}</div>`; initSortable(); } }
+    function initSortable() { Sortable.create(document.getElementById('sortable-class-list'), { animation: 150, onEnd: async (evt) => { const classIds = Array.from(evt.target.children).map(li => li.dataset.classId); await callGAS('updateClassOrder', { classIds }); APP_DATA.classes.sort((a,b) => classIds.indexOf(a.classId) - classIds.indexOf(b.classId)); }, }); }
+    function loadClassDetails(classId) { const classInfo = APP_DATA.classes.find(c => c.classId === classId); if (!classInfo) return; CURRENT_CLASS_DETAILS = { ...classInfo, students: APP_DATA.students[classId] || [], logs: APP_DATA.logs[classId] || [] }; renderDetailsPage(); navigateTo('details-page'); switchTab('schedule'); }
+    function renderDetailsPage() { const page = document.getElementById('details-page'); const data = CURRENT_CLASS_DETAILS; page.innerHTML = `<div class="page-header" style="justify-content: flex-start; gap: 15px;"><button style="width:auto; background:none; color:var(--pgrittutor-blue); padding:0; font-size:16px;" onclick="navigateTo('classes-page')">&lt; คลาสทั้งหมด</button><h1 style="text-align:center; flex-grow:1; font-size: 18px;">${data.className}</h1></div><div class="detail-tabs"><button id="tab-btn-schedule" class="tab-button" onclick="switchTab('schedule')">ตาราง</button><button id="tab-btn-students" class="tab-button" onclick="switchTab('students')">นักเรียน (${data.students.length})</button><button id="tab-btn-logs" class="tab-button" onclick="switchTab('logs')">ประวัติ</button></div><div id="tab-content-schedule" class="tab-content"><div class="list-group"><div class="list-item" style="display:block;"><h3>ตารางเรียนปัจจุบัน</h3><p id="current-schedule-display">${data.schedule || 'ยังไม่มีข้อมูล'}</p><input type="text" id="modal-schedule-edit" value="${data.schedule}" style="margin-top:15px; margin-bottom: 5px;"><button onclick="updateClassSchedule('${data.classId}')">อัปเดตตาราง</button></div></div></div><div id="tab-content-students" class="tab-content"><div class="list-group" id="student-list-container">${data.students.map(renderStudentItem).join('') || '<div class="list-item"><p>ยังไม่มีนักเรียน</p></div>'}</div><div style="padding: 0 15px;"><button onclick="showAddStudentModal()">เพิ่มนักเรียน</button></div></div><div id="tab-content-logs" class="tab-content"><div class="list-group" id="log-list-container">${data.logs.map(renderLogItem).join('') || '<div class="list-item"><p>ยังไม่มีประวัติ</p></div>'}</div><div style="padding: 0 15px;"><button onclick="showAddLogModal()">เพิ่มประวัติการสอน</button></div></div>`; }
+    function switchTab(tabName) { document.querySelectorAll('.detail-tabs .tab-button').forEach(btn => btn.classList.remove('active')); document.getElementById(`tab-btn-${tabName}`).classList.add('active'); document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active')); document.getElementById(`tab-content-${tabName}`).classList.add('active'); }
+    function renderStudentItem(s) { const typeBadge = s.type ? `<span class="student-type-badge ${s.type === 'สด' ? 'badge-live' : 'badge-online'}">${s.type}</span>` : ''; return `<div class="list-item" onclick="showEditStudentModal('${s.id}', \`${s.name}\`, '${s.type}')"><div><h3>${s.name}${typeBadge}</h3></div><span class="arrow">&gt;</span></div>`; }
+    function renderLogItem(log) { const d = new Date(log.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }); return `<div class="list-item" onclick="showEditLogModal('${log.id}', '${log.date}', \`${log.content}\`)"><div><h3>${d}</h3><p>${log.content}</p></div><span class="arrow">&gt;</span></div>`; }
     const modal = document.getElementById('form-modal');
-    function showModal(content) { /* ... Same as before ... */ }
-    function closeModal(event) { /* ... Same as before ... */ }
-
-    // --- Actions (Now update Cache instantly) ---
-    async function addClass() {
-        // ...
-        const newClassData = await callGAS('addClass', { className, schedule });
-        if (newClassData) {
-            APP_DATA.classes.push(newClassData); // Update cache
-            renderClassList();
-            closeModal({target:modal});
-        }
-    }
-
-    async function updateClassSchedule(classId) {
-        // ...
-        await callGAS('updateClassSchedule', { classId, schedule: newSchedule });
-        APP_DATA.classes.find(c => c.classId === classId).schedule = newSchedule; // Update cache
-        CURRENT_CLASS_DETAILS.schedule = newSchedule;
-        document.getElementById('current-schedule-display').textContent = newSchedule;
-        alert('อัปเดตตารางเรียนเรียบร้อย');
-    }
-
-    async function addStudent() {
-        // ...
-        const newStudent = await callGAS('addStudent', { /*...*/ });
-        if (newStudent) {
-            if (!APP_DATA.students[CURRENT_CLASS_DETAILS.classId]) {
-                APP_DATA.students[CURRENT_CLASS_DETAILS.classId] = [];
-            }
-            APP_DATA.students[CURRENT_CLASS_DETAILS.classId].push(newStudent); // Update cache
-            loadClassDetails(CURRENT_CLASS_DETAILS.classId); // Reload details from cache
-            switchTab('students');
-            closeModal({target:modal});
-        }
-    }
-    // ... Other functions like updateStudent, deleteStudent, addLog, etc. should also update the APP_DATA cache ...
-    
-    // --- Dashboard (Reads from Cache) ---
-    function loadDashboard() {
-        renderDashboard();
-    }
-    
-    function renderDashboard() {
-        const page = document.getElementById('dashboard-content');
-        let allLogs = [];
-        // Collate all logs from the cache
-        for (const classId in APP_DATA.logs) {
-            const className = APP_DATA.classes.find(c => c.classId === classId)?.className || 'Unknown';
-            APP_DATA.logs[classId].forEach(log => {
-                allLogs.push({ ...log, className });
-            });
-        }
-        
-        // Add event listeners to buttons instead of inline onclick
-        page.innerHTML = `...`; // Same HTML as before
-        document.getElementById('sort-by-date-btn').onclick = () => sortAndRenderDashboard(allLogs, 'date');
-        document.getElementById('sort-by-edit-btn').onclick = () => sortAndRenderDashboard(allLogs, 'timestamp'); // Assuming timestamp is available
-        
-        sortAndRenderDashboard(allLogs, 'date'); // Initial sort
-    }
-
-    function sortAndRenderDashboard(logs, sortBy) {
-        // ... Renders the sorted logs to the dashboard list ...
-    }
-    
-    // Simplified code blocks for brevity. The full logic from previous versions should be used for the omitted functions.
+    function showModal(content) { modal.querySelector('#modal-container').innerHTML = content; modal.classList.add('active'); }
+    function closeModal(event) { if (event.target === modal || event.target.id === 'cancel-btn' || event.target.classList.contains('modal-overlay')) { modal.classList.remove('active'); } }
+    function showAddClassModal() { showModal(`<h2>เพิ่มคลาสใหม่</h2><input type="text" id="modal-className" placeholder="ชื่อคลาสเรียน"><input type="text" id="modal-schedule" placeholder="ตารางเรียน (เช่น จ. 17:00, พ. 18:00)"><button onclick="addClass()">เพิ่มคลาส</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function addClass() { const className = document.getElementById('modal-className').value; const schedule = document.getElementById('modal-schedule').value; if (!className) return alert('กรุณาใส่ชื่อคลาส'); const newClass = await callGAS('addClass', { className, schedule }); if (newClass) { APP_DATA.classes.push(newClass); renderClassList(); closeModal({target:modal}); } }
+    async function updateClassSchedule(classId) { const newSchedule = document.getElementById('modal-schedule-edit').value; await callGAS('updateClassSchedule', { classId, schedule: newSchedule }); APP_DATA.classes.find(c => c.classId === classId).schedule = newSchedule; CURRENT_CLASS_DETAILS.schedule = newSchedule; document.getElementById('current-schedule-display').textContent = newSchedule; alert('อัปเดตตารางเรียนเรียบร้อย'); }
+    function showAddStudentModal() { showModal(`<h2>เพิ่มนักเรียน</h2><input type="text" id="modal-studentName" placeholder="ชื่อนักเรียน"><select id="modal-studentType"><option value="สด">เรียนห้องสด</option><option value="ออนไลน์">เรียนออนไลน์</option></select><button onclick="addStudent()">เพิ่มนักเรียน</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function addStudent() { const studentName = document.getElementById('modal-studentName').value; const studentType = document.getElementById('modal-studentType').value; if (!studentName) return alert('กรุณาใส่ชื่อนักเรียน'); const newStudent = await callGAS('addStudent', { classId: CURRENT_CLASS_DETAILS.classId, studentName, studentType }); if (newStudent) { if (!APP_DATA.students[CURRENT_CLASS_DETAILS.classId]) { APP_DATA.students[CURRENT_CLASS_DETAILS.classId] = []; } APP_DATA.students[CURRENT_CLASS_DETAILS.classId].push(newStudent); loadClassDetails(CURRENT_CLASS_DETAILS.classId); switchTab('students'); closeModal({target:modal}); } }
+    function showEditStudentModal(id, name, type) { showModal(`<h2>แก้ไขข้อมูลนักเรียน</h2><input type="text" id="modal-studentName" value="${name}"><select id="modal-studentType"><option value="สด" ${type === 'สด' ? 'selected' : ''}>เรียนห้องสด</option><option value="ออนไลน์" ${type === 'ออนไลน์' ? 'selected' : ''}>เรียนออนไลน์</option></select><button onclick="updateStudent('${id}')">บันทึก</button><button class="btn-danger" style="margin-top:10px;" onclick="deleteStudent('${id}')">ลบนักเรียน</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function updateStudent(studentId) { const newName = document.getElementById('modal-studentName').value; const newType = document.getElementById('modal-studentType').value; await callGAS('updateStudent', { studentId, newName, newType }); APP_DATA.students[CURRENT_CLASS_DETAILS.classId].find(s => s.id === studentId).name = newName; APP_DATA.students[CURRENT_CLASS_DETAILS.classId].find(s => s.id === studentId).type = newType; loadClassDetails(CURRENT_CLASS_DETAILS.classId); switchTab('students'); closeModal({target:modal}); }
+    async function deleteStudent(studentId) { if (!confirm('คุณแน่ใจหรือไม่ว่าจะลบนักเรียนคนนี้?')) return; await callGAS('deleteStudent', { studentId }); APP_DATA.students[CURRENT_CLASS_DETAILS.classId] = APP_DATA.students[CURRENT_CLASS_DETAILS.classId].filter(s => s.id !== studentId); loadClassDetails(CURRENT_CLASS_DETAILS.classId); switchTab('students'); closeModal({target:modal}); }
+    function showAddLogModal() { showModal(`<h2>เพิ่มประวัติการสอน</h2><input type="date" id="modal-logDate" value="${new Date().toISOString().slice(0,10)}"><textarea id="modal-logContent" placeholder="เนื้อหาที่สอน..."></textarea><button onclick="addLog()">เพิ่มบันทึก</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function addLog() { const logDate = document.getElementById('modal-logDate').value; const logContent = document.getElementById('modal-logContent').value; if (!logDate || !logContent) return alert('กรุณากรอกข้อมูลให้ครบ'); const newLog = await callGAS('addTeachingLog', { classId: CURRENT_CLASS_DETAILS.classId, logDate, logContent }); if (newLog) { if (!APP_DATA.logs[CURRENT_CLASS_DETAILS.classId]) { APP_DATA.logs[CURRENT_CLASS_DETAILS.classId] = []; } APP_DATA.logs[CURRENT_CLASS_DETAILS.classId].unshift(newLog); loadClassDetails(CURRENT_CLASS_DETAILS.classId); switchTab('logs'); closeModal({target:modal}); } }
+    function showEditLogModal(id, date, content) { showModal(`<h2>แก้ไขประวัติการสอน</h2><input type="date" id="modal-logDate" value="${date}"><textarea id="modal-logContent">${content}</textarea><button onclick="updateLog('${id}')">บันทึก</button><button class="btn-danger" style="margin-top:10px;" onclick="deleteLog('${id}')">ลบรายการนี้</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function updateLog(logId) { const newDate = document.getElementById('modal-logDate').value; const newContent = document.getElementById('modal-logContent').value; await callGAS('updateLog', { logId, logDate: newDate, logContent: newContent }); APP_DATA.logs[CURRENT_CLASS_DETAILS.classId].find(l => l.id === logId).date = newDate; APP_DATA.logs[CURRENT_CLASS_DETAILS.classId].find(l => l.id === logId).content = newContent; loadClassDetails(CURRENT_CLASS_DETAILS.classId); switchTab('logs'); closeModal({target:modal}); }
+    async function deleteLog(logId) { if (!confirm('คุณแน่ใจหรือไม่ว่าจะลบรายการนี้?')) return; await callGAS('deleteLog', { logId }); APP_DATA.logs[CURRENT_CLASS_DETAILS.classId] = APP_DATA.logs[CURRENT_CLASS_DETAILS.classId].filter(l => l.id !== logId); loadClassDetails(CURRENT_CLASS_DETAILS.classId); switchTab('logs'); closeModal({target:modal}); }
+    function loadDashboard() { const allLogs = []; for (const classId in APP_DATA.logs) { const className = APP_DATA.classes.find(c => c.classId === classId)?.className || 'Unknown'; APP_DATA.logs[classId].forEach(log => { allLogs.push({ ...log, className, timestamp: log.id.substring(1) }); }); } CURRENT_DASHBOARD_LOGS = allLogs; sortAndRenderDashboard('logDate'); }
+    function renderDashboard() { const page = document.getElementById('dashboard-content'); page.innerHTML = `<div style="padding: 15px;"><p style="font-size:14px; color:var(--pgrittutor-dark-gray); margin-bottom:10px;">ประวัติการสอนทั้งหมด</p><button onclick="sortAndRenderDashboard('logDate')">เรียงตามวันที่สอน</button><button style="margin-top:10px;" class="btn-secondary" onclick="sortAndRenderDashboard('timestamp')">เรียงตามวันที่แก้ไข</button></div><div class="list-group" id="dashboard-log-list">${CURRENT_DASHBOARD_LOGS.map(renderDashboardLogItem).join('') || '<div class="list-item"><p>ยังไม่มีประวัติการสอน</p></div>'}</div>`; }
+    function renderDashboardLogItem(log) { const logDateFormatted = new Date(log.logDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }); const timestampFormatted = new Date(parseInt(log.timestamp)).toLocaleString('th-TH'); return `<div class="dashboard-log-item"><h3>${logDateFormatted} - ${log.className}</h3><p>${log.content}</p><small>แก้ไขล่าสุด: ${timestampFormatted}</small></div>`; }
+    function sortAndRenderDashboard(sortBy) { CURRENT_DASHBOARD_LOGS.sort((a, b) => new Date(sortBy === 'timestamp' ? parseInt(b[sortBy]) : b[sortBy]) - new Date(sortBy === 'timestamp' ? parseInt(a[sortBy]) : a[sortBy])); renderDashboard(); }
+    function updateNavIcons() { document.querySelectorAll('.bottom-nav .nav-item').forEach(n => { const icon = n.querySelector('img'); const defaultColor = '%238A8A8E'; const activeColor = '%2300008B'; const fillPattern = /fill='(%23[0-9A-Fa-f]{6})'/; if (n.classList.contains('active')) { icon.src = icon.src.replace(fillPattern, `fill='${activeColor}'`); } else { icon.src = icon.src.replace(fillPattern, `fill='${defaultColor}'`); } }); }
 </script>
 </body>
 </html>
