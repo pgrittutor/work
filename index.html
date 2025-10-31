@@ -2,56 +2,43 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TutorMate</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
-            --primary-color: #007AFF; /* iOS Blue */
-            --secondary-color: #F2F2F7; /* iOS Light Gray */
-            --text-color: #1C1C1E;
-            --text-secondary-color: #8A8A8E;
-            --background-color: #FFFFFF;
-            --separator-color: #E5E5EA;
+            --primary-color: #007AFF; --secondary-color: #F2F2F7; --text-color: #1C1C1E;
+            --text-secondary-color: #8A8A8E; --background-color: #FFFFFF; --separator-color: #E5E5EA;
         }
         html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--secondary-color); color: var(--text-color); }
         .app-container { display: flex; flex-direction: column; height: 100%; }
-        .page { flex-grow: 1; overflow-y: auto; padding: 15px; display: none; }
+        .page { flex-grow: 1; overflow-y: auto; display: none; padding-bottom: 70px; /* Space for nav bar */ }
         .page.active { display: block; }
-        .page-header { padding: 10px 15px; background-color: var(--background-color); border-bottom: 1px solid var(--separator-color); }
+        .page-header { padding: 15px; background-color: rgba(255,255,255,0.8); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--separator-color); position: sticky; top: 0; z-index: 5; }
         .page-header h1 { font-size: 24px; margin: 0; }
-        .bottom-nav { display: flex; background-color: #F8F8F8; border-top: 1px solid var(--separator-color); }
+        .bottom-nav { display: flex; background-color: rgba(248,248,248,0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--separator-color); position: fixed; bottom: 0; width: 100%; }
         .nav-item { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: var(--text-secondary-color); }
         .nav-item.active { color: var(--primary-color); }
-        
-        /* List Styles */
-        .list-group { margin: 15px 0; background: var(--background-color); border-radius: 10px; overflow: hidden; }
+        .list-group { margin: 15px; background: var(--background-color); border-radius: 10px; overflow: hidden; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--separator-color); cursor: pointer; }
         .list-item:last-child { border-bottom: none; }
-        .list-item h3 { margin: 0; font-size: 17px; } .list-item p { margin: 0; color: var(--text-secondary-color); font-size: 15px; }
-        
-        /* FAB */
+        .list-item h3 { margin: 0; font-size: 17px; } .list-item p { margin: 5px 0 0; color: var(--text-secondary-color); font-size: 15px; }
         .fab { position: fixed; bottom: 80px; right: 20px; width: 56px; height: 56px; background-color: var(--primary-color); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 10; }
-        
-        /* Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 99; display: none; }
         .modal-content { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--secondary-color); border-radius: 12px 12px 0 0; padding: 20px; box-sizing: border-box; transform: translateY(100%); transition: transform 0.3s ease-out; }
         .modal-content h2 { margin-top: 0; }
-        .modal-overlay.active { display: block; }
-        .modal-overlay.active .modal-content { transform: translateY(0); }
-        
-        /* Form Elements */
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #C6C6C8; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-overlay.active { display: block; } .modal-overlay.active .modal-content { transform: translateY(0); }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #C6C6C8; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: white; }
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; background-color: var(--primary-color); color: white; font-size: 17px; font-weight: 600; }
-        .btn-danger { background-color: #FF3B30; }
-
-        /* Detail Page Tabs */
-        .detail-tabs { display: flex; background: #EFEFF4; border-radius: 8px; padding: 3px; }
+        .btn-danger { background-color: #FF3B30; } .btn-secondary { background-color: #8E8E93; }
+        .detail-tabs { display: flex; background: #EFEFF4; border-radius: 8px; padding: 3px; margin: 15px; }
         .tab-button { flex: 1; padding: 8px; text-align: center; background: transparent; border: none; border-radius: 6px; font-weight: 600; color: var(--text-color); }
         .tab-button.active { background: var(--background-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
+        .tab-content { display: none; } .tab-content.active { display: block; }
+        .student-type-badge { font-size: 0.8em; padding: 2px 6px; border-radius: 10px; color: white; margin-left: 8px; }
+        .badge-live { background-color: #34C759; } .badge-online { background-color: #FF9500; }
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 999; }
     </style>
 </head>
@@ -59,18 +46,9 @@
     <div class="loader"><h3>กำลังโหลด...</h3></div>
 
     <div class="app-container">
-        <div id="classes-page" class="page active">
-            <div class="page-header"><h1>คลาสเรียน</h1></div>
-            <div id="class-list-container"></div>
-            <div class="fab" onclick="showAddClassModal()">+</div>
-        </div>
-
-        <div id="details-page" class="page">
-            </div>
-        
-        <div id="dashboard-page" class="page">
-             <div class="page-header"><h1>Dashboard</h1></div>
-             </div>
+        <div id="classes-page" class="page active"><div class="page-header"><h1>คลาสเรียน</h1></div><div id="class-list-container"></div><div class="fab" onclick="showAddClassModal()">+</div></div>
+        <div id="details-page" class="page"></div>
+        <div id="dashboard-page" class="page"></div>
 
         <nav class="bottom-nav">
             <div id="nav-classes" class="nav-item active" onclick="navigateTo('classes-page')">คลาส</div>
@@ -78,19 +56,14 @@
         </nav>
     </div>
 
-    <div id="form-modal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content" id="modal-container">
-            </div>
-    </div>
-
+    <div id="form-modal" class="modal-overlay" onclick="closeModal(event)"><div class="modal-content" id="modal-container"></div></div>
 
 <script>
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1pojd2Zb0JfwT4fc9SzihZFi4axhagJQ7Xaomktc_fNG_1Rr07ZATeMzpDGxFodPy/exec'; // 🔗 วาง URL เดิมของคุณตรงนี้
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1pojd2Zb0JfwT4fc9SzihZFi4axhagJQ7Xaomktc_fNG_1Rr07ZATeMzpDGxFodPy/exec'; // 🔗 วาง URL ของคุณตรงนี้!
     const loader = document.querySelector('.loader');
-    let ALL_CLASSES_LIST = []; // Store only the class list for speed
-    let CURRENT_CLASS_DETAILS = null; // Store details of the currently viewed class
+    let ALL_CLASSES_LIST = [];
+    let CURRENT_CLASS_DETAILS = null;
 
-    // --- Core & Navigation ---
     async function callGAS(action, payload = {}) {
         loader.style.display = 'flex';
         try {
@@ -98,52 +71,41 @@
             const result = await response.json();
             if (result.status === 'error') throw new Error(result.message);
             return result.data;
-        } finally {
-            loader.style.display = 'none';
-        }
+        } catch (error) { console.error('GAS Call Error:', error); alert('เกิดข้อผิดพลาด: ' + error.message); return null;
+        } finally { loader.style.display = 'none'; }
     }
 
     function navigateTo(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
-        
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if (pageId === 'classes-page' || pageId === 'details-page') {
-            document.getElementById('nav-classes').classList.add('active');
-        } else {
-            document.getElementById(`nav-${pageId.split('-')[0]}`).classList.add('active');
-        }
-
+        const navId = (pageId === 'details-page') ? 'nav-classes' : `nav-${pageId.split('-')[0]}`;
+        document.getElementById(navId).classList.add('active');
         if (pageId === 'dashboard-page') loadDashboard();
+        if (pageId === 'classes-page') renderClassList(); // Re-render in case of updates
     }
-    
-    // --- Initial Load ---
+
     window.onload = async () => {
         ALL_CLASSES_LIST = await callGAS('getClassesList');
         renderClassList();
     };
 
-    // --- Class List Page ---
     function renderClassList() {
         const container = document.getElementById('class-list-container');
-        container.innerHTML = `
-            <div class="list-group" id="sortable-class-list">
-                ${ALL_CLASSES_LIST.map(cls => `
-                    <div class="list-item" data-class-id="${cls.classId}" onclick="loadClassDetails('${cls.classId}')">
-                        <div><h3>${cls.className}</h3></div>
-                        <span>&gt;</span>
-                    </div>
-                `).join('')}
-            </div>`;
+        container.innerHTML = `<div class="list-group" id="sortable-class-list">
+            ${ALL_CLASSES_LIST.map(cls => `
+                <div class="list-item" data-class-id="${cls.classId}" onclick="loadClassDetails('${cls.classId}')">
+                    <div><h3>${cls.className}</h3></div><span style="color:#C7C7CC;">&gt;</span>
+                </div>`).join('') || '<div class="list-item"><p>ยังไม่มีคลาสเรียน กดปุ่ม + เพื่อเพิ่ม</p></div>'}
+        </div>`;
         initSortable();
     }
-    
+
     function initSortable() {
-        const el = document.getElementById('sortable-class-list');
-        Sortable.create(el, {
+        Sortable.create(document.getElementById('sortable-class-list'), {
             animation: 150,
             onEnd: async (evt) => {
-                const classIds = Array.from(el.children).map(li => li.dataset.classId);
+                const classIds = Array.from(evt.target.children).map(li => li.dataset.classId);
                 await callGAS('updateClassOrder', { classIds });
             },
         });
@@ -156,33 +118,20 @@
         navigateTo('details-page');
     }
 
-    // --- Details Page ---
     function renderDetailsPage() {
         const page = document.getElementById('details-page');
         const data = CURRENT_CLASS_DETAILS;
         page.innerHTML = `
             <div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <button style="width:auto; background:none; color:var(--primary-color); padding:0;" onclick="navigateTo('classes-page')">&lt; Back</button>
-                <h1 style="text-align:center; flex-grow:1;">${data.className}</h1>
+                <button style="width:auto; background:none; color:var(--primary-color); padding:0; font-size:16px;" onclick="navigateTo('classes-page')">&lt; คลาสทั้งหมด</button>
+                <h1 style="text-align:center; flex-grow:1; font-size: 18px;">${data.className}</h1>
             </div>
             <div class="detail-tabs">
-                <button id="tab-btn-students" class="tab-button active" onclick="switchTab('students')">นักเรียน</button>
+                <button id="tab-btn-students" class="tab-button active" onclick="switchTab('students')">นักเรียน (${data.students.length})</button>
                 <button id="tab-btn-logs" class="tab-button" onclick="switchTab('logs')">ประวัติ</button>
             </div>
-            
-            <div id="tab-content-students" class="tab-content active">
-                <div class="list-group" id="student-list-container">
-                    ${data.students.map(renderStudentItem).join('') || '<div class="list-item"><p>ยังไม่มีนักเรียน</p></div>'}
-                </div>
-                <button onclick="showAddStudentModal()">เพิ่มนักเรียน</button>
-            </div>
-            <div id="tab-content-logs" class="tab-content">
-                <div class="list-group" id="log-list-container">
-                     ${data.logs.map(renderLogItem).join('') || '<div class="list-item"><p>ยังไม่มีประวัติ</p></div>'}
-                </div>
-                <button onclick="showAddLogModal()">เพิ่มประวัติการสอน</button>
-            </div>
-        `;
+            <div id="tab-content-students" class="tab-content active"><div class="list-group" id="student-list-container">${data.students.map(renderStudentItem).join('') || '<div class="list-item"><p>ยังไม่มีนักเรียน</p></div>'}</div><div style="padding: 0 15px;"><button onclick="showAddStudentModal()">เพิ่มนักเรียน</button></div></div>
+            <div id="tab-content-logs" class="tab-content"><div class="list-group" id="log-list-container">${data.logs.map(renderLogItem).join('') || '<div class="list-item"><p>ยังไม่มีประวัติ</p></div>'}</div><div style="padding: 0 15px;"><button onclick="showAddLogModal()">เพิ่มประวัติการสอน</button></div></div>`;
     }
 
     function switchTab(tabName) {
@@ -192,59 +141,97 @@
         document.getElementById(`tab-content-${tabName}`).classList.add('active');
     }
 
-    // --- Render Items ---
-    function renderStudentItem(student) { /* ... implementation ... */ }
-    function renderLogItem(log) { /* ... implementation ... */ }
-    // These functions can be built similar to previous versions if needed
+    function renderStudentItem(s) {
+        const typeBadge = s.type ? `<span class="student-type-badge ${s.type === 'สด' ? 'badge-live' : 'badge-online'}">${s.type}</span>` : '';
+        return `<div class="list-item" onclick="showEditStudentModal('${s.id}', \`${s.name}\`, '${s.type}')"><div><h3>${s.name}${typeBadge}</h3></div><span style="color:#C7C7CC;">Edit</span></div>`;
+    }
 
-    // --- Modal Handling ---
+    function renderLogItem(log) {
+        const d = new Date(log.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+        return `<div class="list-item" onclick="showEditLogModal('${log.id}', '${log.date}', \`${log.content}\`)"><div><h3>${d}</h3><p>${log.content}</p></div><span style="color:#C7C7CC;">Edit</span></div>`;
+    }
+
     const modal = document.getElementById('form-modal');
-    const modalContainer = document.getElementById('modal-container');
+    function showModal(content) { modal.querySelector('#modal-container').innerHTML = content; modal.classList.add('active'); }
+    function closeModal(event) { if (event.target === modal || event.target.id === 'cancel-btn') { modal.classList.remove('active'); } }
 
-    function showModal(content) {
-        modalContainer.innerHTML = content;
-        modal.classList.add('active');
-    }
-    
-    function closeModal(event) {
-        if (event.target === modal || event.target.id === 'cancel-btn') {
-            modal.classList.remove('active');
-        }
-    }
-    
-    function showAddClassModal() {
-        showModal(`
-            <h2>เพิ่มคลาสใหม่</h2>
-            <input type="text" id="modal-className" placeholder="ชื่อคลาสเรียน">
-            <input type="text" id="modal-schedule" placeholder="ตารางเรียน">
-            <button onclick="addClass()">บันทึก</button>
-            <button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>
-        `);
-    }
-
-    // --- Action Functions (e.g., addClass) ---
+    function showAddClassModal() { showModal(`<h2>เพิ่มคลาสใหม่</h2><input type="text" id="modal-className" placeholder="ชื่อคลาสเรียน"><input type="text" id="modal-schedule" placeholder="ตารางเรียน"><button onclick="addClass()">บันทึก</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
     async function addClass() {
         const className = document.getElementById('modal-className').value;
         const schedule = document.getElementById('modal-schedule').value;
         if (!className) return alert('กรุณาใส่ชื่อคลาส');
-        
         const newClass = await callGAS('addClass', { className, schedule });
-        if (newClass) {
-            ALL_CLASSES_LIST.push(newClass);
-            renderClassList();
-            closeModal({target:modal}); // Close modal on success
-        }
+        if (newClass) { ALL_CLASSES_LIST.push(newClass); renderClassList(); closeModal({target:modal}); }
+    }
+
+    function showAddStudentModal() { showModal(`<h2>เพิ่มนักเรียน</h2><input type="text" id="modal-studentName" placeholder="ชื่อนักเรียน"><select id="modal-studentType"><option value="สด">เรียนห้องสด</option><option value="ออนไลน์">เรียนออนไลน์</option></select><button onclick="addStudent()">บันทึก</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function addStudent() {
+        const studentName = document.getElementById('modal-studentName').value;
+        const studentType = document.getElementById('modal-studentType').value;
+        if (!studentName) return alert('กรุณาใส่ชื่อนักเรียน');
+        const newStudent = await callGAS('addStudent', { classId: CURRENT_CLASS_DETAILS.classId, studentName, studentType });
+        if (newStudent) { CURRENT_CLASS_DETAILS.students.push(newStudent); renderDetailsPage(); switchTab('students'); closeModal({target:modal}); }
     }
     
-    // ... Other functions like addStudent, addLog, edit, delete would follow this modal pattern ...
-
-    // --- Dashboard Page ---
-    async function loadDashboard() {
-         const allLogs = await callGAS('getAllLogs');
-         renderDashboard(allLogs);
+    function showEditStudentModal(id, name, type) {
+        showModal(`<h2>แก้ไขข้อมูลนักเรียน</h2><input type="text" id="modal-studentName" value="${name}"><select id="modal-studentType"><option value="สด" ${type === 'สด' ? 'selected' : ''}>เรียนห้องสด</option><option value="ออนไลน์" ${type === 'ออนไลน์' ? 'selected' : ''}>เรียนออนไลน์</option></select><button onclick="updateStudent('${id}')">บันทึก</button><button class="btn-danger" style="margin-top:10px;" onclick="deleteStudent('${id}')">ลบนักเรียน</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`);
     }
-    function renderDashboard(logs) { /* ... implementation ... */ }
+    async function updateStudent(studentId) {
+        const newName = document.getElementById('modal-studentName').value;
+        const newType = document.getElementById('modal-studentType').value;
+        await callGAS('updateStudent', { studentId, newName, newType });
+        const student = CURRENT_CLASS_DETAILS.students.find(s => s.id === studentId);
+        student.name = newName; student.type = newType;
+        renderDetailsPage(); switchTab('students'); closeModal({target:modal});
+    }
+    async function deleteStudent(studentId) {
+        if (!confirm('ยืนยันการลบนักเรียน?')) return;
+        await callGAS('deleteStudent', { studentId });
+        CURRENT_CLASS_DETAILS.students = CURRENT_CLASS_DETAILS.students.filter(s => s.id !== studentId);
+        renderDetailsPage(); switchTab('students'); closeModal({target:modal});
+    }
 
+    function showAddLogModal() { showModal(`<h2>เพิ่มประวัติการสอน</h2><input type="date" id="modal-logDate"><textarea id="modal-logContent" placeholder="เนื้อหาที่สอน..."></textarea><button onclick="addLog()">บันทึก</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function addLog() {
+        const logDate = document.getElementById('modal-logDate').value;
+        const logContent = document.getElementById('modal-logContent').value;
+        if (!logDate || !logContent) return alert('กรุณากรอกข้อมูลให้ครบ');
+        const newLog = await callGAS('addTeachingLog', { classId: CURRENT_CLASS_DETAILS.classId, logDate, logContent });
+        if (newLog) { CURRENT_CLASS_DETAILS.logs.unshift(newLog); renderDetailsPage(); switchTab('logs'); closeModal({target:modal}); }
+    }
+
+    function showEditLogModal(id, date, content) {
+        showModal(`<h2>แก้ไขประวัติการสอน</h2><input type="date" id="modal-logDate" value="${date}"><textarea id="modal-logContent">${content}</textarea><button onclick="updateLog('${id}')">บันทึก</button><button class="btn-danger" style="margin-top:10px;" onclick="deleteLog('${id}')">ลบรายการนี้</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`);
+    }
+    async function updateLog(logId) {
+        const newDate = document.getElementById('modal-logDate').value;
+        const newContent = document.getElementById('modal-logContent').value;
+        await callGAS('updateLog', { logId, logDate: newDate, logContent: newContent });
+        const log = CURRENT_CLASS_DETAILS.logs.find(l => l.id === logId);
+        log.date = newDate; log.content = newContent;
+        renderDetailsPage(); switchTab('logs'); closeModal({target:modal});
+    }
+    async function deleteLog(logId) {
+        if (!confirm('ยืนยันการลบรายการนี้?')) return;
+        await callGAS('deleteLog', { logId });
+        CURRENT_CLASS_DETAILS.logs = CURRENT_CLASS_DETAILS.logs.filter(l => l.id !== logId);
+        renderDetailsPage(); switchTab('logs'); closeModal({target:modal});
+    }
+
+    async function loadDashboard() {
+        const allLogs = await callGAS('getAllLogs');
+        renderDashboard(allLogs);
+    }
+    function renderDashboard(logs) {
+        const page = document.getElementById('dashboard-page');
+        page.innerHTML = `<div class="page-header"><h1>Dashboard</h1></div>
+        <div style="padding: 0 15px;"><p>ประวัติการสอนทั้งหมด</p><button onclick="sortAndRenderDashboard(logs, 'logDate')">เรียงตามวันที่สอน</button><button style="margin-top:10px;" class="btn-secondary" onclick="sortAndRenderDashboard(logs, 'timestamp')">เรียงตามวันที่แก้ไข</button></div>
+        <div class="list-group" id="dashboard-log-list">${logs.map(log => `<div class="list-item"><div><h3>${new Date(log.logDate).toLocaleDateString('th-TH')} - ${log.className}</h3><p>${log.logContent}</p></div></div>`).join('')}</div>`;
+    }
+    function sortAndRenderDashboard(logs, sortBy) {
+        logs.sort((a, b) => new Date(b[sortBy]) - new Date(a[sortBy]));
+        renderDashboard(logs);
+    }
 </script>
 </body>
 </html>
