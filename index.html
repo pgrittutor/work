@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดการตารางสอน</title>
+    <title>ระบบจัดการตารางสอน (Fast Version)</title>
     <style>
+        /* CSS เหมือนเดิม ไม่ต้องเปลี่ยน */
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; color: #333; margin: 20px; }
         .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1, h2 { color: #2c3e50; }
         .form-section, .class-card { margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
         input[type="text"], textarea, button { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         textarea { resize: vertical; min-height: 60px; }
-        button { background-color: #3498db; color: white; font-weight: bold; cursor: pointer; border: none; }
+        button { background-color: #3498db; color: white; font-weight: bold; cursor: pointer; border: none; transition: background-color 0.2s; }
         button:hover { background-color: #2980b9; }
         .btn-secondary { background-color: #2ecc71; }
         .btn-secondary:hover { background-color: #27ae60; }
@@ -28,17 +29,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
     <div class="container">
-        <h1>🗓️ ระบบจัดการตารางสอน</h1>
-
+        <h1>🗓️ ระบบจัดการตารางสอน (Fast Version)</h1>
         <div class="form-section">
             <h2>เพิ่มคลาสเรียนใหม่</h2>
             <input type="text" id="newClassName" placeholder="ชื่อคลาสเรียน (เช่น คณิต ม.1)">
             <input type="text" id="newSchedule" placeholder="ตารางเรียน (เช่น จ. 17:00, พ. 18:00)">
             <button onclick="addClass()">เพิ่มคลาส</button>
         </div>
-
         <h2>คลาสเรียนทั้งหมด</h2>
         <div id="loading" class="loading">กำลังโหลดข้อมูล...</div>
         <div id="classGrid" class="class-grid"></div>
@@ -47,12 +45,12 @@
     <script>
         const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1pojd2Zb0JfwT4fc9SzihZFi4axhagJQ7Xaomktc_fNG_1Rr07ZATeMzpDGxFodPy/exec'; // 🔗 วาง URL เดิมของคุณตรงนี้
 
+        // ฟังก์ชัน callGAS เหมือนเดิม
         async function callGAS(action, payload = {}) {
             document.getElementById('loading').style.display = 'block';
             try {
                 const response = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'cors',
+                    method: 'POST', mode: 'cors',
                     body: JSON.stringify({ action, payload })
                 });
                 const result = await response.json();
@@ -67,6 +65,7 @@
             }
         }
 
+        // ✨ ปรับปรุง: เพิ่ม ID ให้กับ list เพื่อให้หาเจอง่ายขึ้น
         async function fetchAndDisplayClasses() {
             document.getElementById('classGrid').innerHTML = '';
             const classes = await callGAS('getClasses');
@@ -82,16 +81,16 @@
                         <hr>
                         <h4>ประวัติการสอน:</h4>
                         <div class="log-history">
-                            <ul>
-                                ${c.logs.length > 0 ? c.logs.map(log => `<li><strong>${log.date}:</strong> ${log.content}</li>`).join('') : '<li>ยังไม่มีบันทึก</li>'}
+                            <ul id="log-list-${c.classId}">
+                                ${c.logs.length > 0 ? c.logs.map(log => `<li><strong>${log.date}:</strong> ${log.content}</li>`).join('') : '<li class="no-items">ยังไม่มีบันทึก</li>'}
                             </ul>
                         </div>
                         <textarea id="logContent-${c.classId}" placeholder="บันทึกว่าวันนี้สอนอะไรไป..."></textarea>
                         <button onclick="addLog('${c.classId}')" class="btn-secondary">บันทึกการสอน</button>
                         <hr>
                         <h4>นักเรียน:</h4>
-                        <ul>
-                            ${c.students.length > 0 ? c.students.map(s => `<li>${s}</li>`).join('') : '<li>ยังไม่มีนักเรียน</li>'}
+                        <ul id="student-list-${c.classId}">
+                            ${c.students.length > 0 ? c.students.map(s => `<li>${s}</li>`).join('') : '<li class="no-items">ยังไม่มีนักเรียน</li>'}
                         </ul>
                         <div>
                             <input type="text" id="studentName-${c.classId}" class="small-input" placeholder="เพิ่มชื่อนักเรียน">
@@ -103,6 +102,7 @@
             }
         }
 
+        // addClass จะโหลดใหม่ทั้งหมด เพราะเป็นการเพิ่มของชิ้นใหญ่
         async function addClass() {
             const className = document.getElementById('newClassName').value;
             const schedule = document.getElementById('newSchedule').value;
@@ -110,30 +110,57 @@
             await callGAS('addClass', { className, schedule });
             document.getElementById('newClassName').value = '';
             document.getElementById('newSchedule').value = '';
-            fetchAndDisplayClasses();
+            fetchAndDisplayClasses(); // โหลดใหม่เมื่อเพิ่มคลาส
         }
         
+        // ✨ ปรับปรุง: ไม่โหลดใหม่ แต่เพิ่มนักเรียนเข้าไปใน list ทันที
         async function addStudent(classId) {
             const studentNameInput = document.getElementById(`studentName-${classId}`);
-            const studentName = studentNameInput.value;
+            const studentName = studentNameInput.value.trim();
             if (!studentName) return alert('กรุณาใส่ชื่อนักเรียน');
-            await callGAS('addStudent', { classId, studentName });
-            fetchAndDisplayClasses();
+
+            const newStudent = await callGAS('addStudent', { classId, studentName });
+
+            if (newStudent && newStudent.studentName) {
+                const studentList = document.getElementById(`student-list-${classId}`);
+                // ลบข้อความ "ยังไม่มีนักเรียน" ถ้ามี
+                const noItemsMsg = studentList.querySelector('.no-items');
+                if (noItemsMsg) noItemsMsg.remove();
+                
+                // สร้าง element ใหม่และเพิ่มเข้าไป
+                const newLi = document.createElement('li');
+                newLi.textContent = newStudent.studentName;
+                studentList.appendChild(newLi);
+                studentNameInput.value = ''; // เคลียร์ช่อง input
+            }
         }
 
+        // updateSchedule เป็นการเปลี่ยนแปลงสำคัญ อาจจะโหลดใหม่ก็ได้
         async function updateSchedule(classId) {
              const schedule = document.getElementById(`schedule-${classId}`).value;
              await callGAS('updateClassSchedule', { classId, schedule });
              alert('อัปเดตตารางเรียบร้อย!');
-             fetchAndDisplayClasses();
+             // ไม่ต้องโหลดใหม่ก็ได้ เพราะค่าใน input เปลี่ยนแล้ว
         }
         
+        // ✨ ปรับปรุง: ไม่โหลดใหม่ แต่เพิ่ม log เข้าไปใน list ทันที
         async function addLog(classId) {
             const logContentInput = document.getElementById(`logContent-${classId}`);
-            const logContent = logContentInput.value;
+            const logContent = logContentInput.value.trim();
             if (!logContent) return alert('กรุณาใส่เนื้อหาที่สอน');
-            await callGAS('addTeachingLog', { classId, logContent });
-            fetchAndDisplayClasses();
+            
+            const newLog = await callGAS('addTeachingLog', { classId, logContent });
+
+            if (newLog && newLog.date) {
+                const logList = document.getElementById(`log-list-${classId}`);
+                const noItemsMsg = logList.querySelector('.no-items');
+                if (noItemsMsg) noItemsMsg.remove();
+
+                const newLi = document.createElement('li');
+                newLi.innerHTML = `<strong>${newLog.date}:</strong> ${newLog.content}`;
+                logList.prepend(newLi); // ใช้ prepend เพื่อให้ของใหม่อยู่บนสุด
+                logContentInput.value = '';
+            }
         }
 
         window.onload = fetchAndDisplayClasses;
