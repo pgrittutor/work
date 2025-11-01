@@ -68,7 +68,7 @@
     <div id="form-modal" class="modal-overlay" onclick="closeModal(event)"><div class="modal-content" id="modal-container"></div></div>
 
 <script>
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1pojd2Zb0JfwT4fc9SzihZFi4axhagJQ7Xaomktc_fNG_1Rr07ZATeMzpDGxFodPy/exec';
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1pojd2Zb0JfwT4fc9SzihZFi4axhagJQ7Xaomktc_fNG_1Rr07ZATeMzpDGxFodPy/exec'; // 🔗 ใส่ URL ของคุณที่นี่
     const LOGO_URL = 'https://pgrittutor.com/wp-content/uploads/2024/05/logo_4k-removebg-preview.webp';
     const loader = document.querySelector('.loader'); 
     let APP_DATA = {}; 
@@ -114,24 +114,149 @@
         } finally { if (showLoader && loader) loader.style.display = 'none'; }
     }
 
-    function navigateTo(pageId) { /* ... same as before ... */ }
-    function renderClassList() { /* ... same as before ... */ }
-    function initSortable() { /* ... same as before ... */ }
-    function loadClassDetails(classId) { /* ... same as before ... */ }
-    function renderDetailsPage() { /* ... same as before ... */ }
-    function switchTab(tabName) { /* ... same as before ... */ }
+    function navigateTo(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        const navId = (pageId === 'details-page') ? 'nav-classes' : `nav-${pageId.split('-')[0]}`;
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(n => { n.classList.toggle('active', n.id === navId); });
+        updateNavIcons();
+        if (pageId === 'dashboard-page') loadDashboard();
+        if (pageId === 'classes-page') renderClassList();
+    }
+
+    function renderClassList() {
+        const container = document.getElementById('class-list-container');
+        if (!APP_DATA.classes || APP_DATA.classes.length === 0) {
+            container.innerHTML = `<div class="welcome-message"><h2>ยังไม่มีคลาสเรียน</h2><p>กดปุ่ม + ด้านล่างเพื่อเพิ่มคลาสแรกของคุณ</p></div>`;
+        } else {
+            container.innerHTML = `<div class="list-group" id="sortable-class-list">${APP_DATA.classes.map(cls => `<div class="list-item" data-class-id="${cls.classId}" onclick="loadClassDetails('${cls.classId}')"><div><h3>${cls.className}</h3></div><span class="arrow">&gt;</span></div>`).join('')}</div>`;
+            initSortable();
+        }
+    }
+
+    function initSortable() {
+        Sortable.create(document.getElementById('sortable-class-list'), {
+            animation: 150,
+            onEnd: async (evt) => {
+                const classIds = Array.from(evt.target.children).map(li => li.dataset.classId);
+                await callGAS('updateClassOrder', { classIds });
+                APP_DATA.classes.sort((a,b) => classIds.indexOf(a.classId) - classIds.indexOf(b.classId));
+            },
+        });
+    }
+
+    function loadClassDetails(classId) {
+        const classInfo = APP_DATA.classes.find(c => c.classId === classId);
+        if (!classInfo) return;
+        CURRENT_CLASS_DETAILS = { ...classInfo, students: APP_DATA.students[classId] || [], logs: APP_DATA.logs[classId] || [] };
+        renderDetailsPage();
+        navigateTo('details-page');
+        switchTab('schedule');
+    }
+
+    function renderDetailsPage() {
+        const page = document.getElementById('details-page');
+        const data = CURRENT_CLASS_DETAILS;
+        page.innerHTML = `<div class="page-header" style="justify-content: flex-start; gap: 15px;"><button style="width:auto; background:none; color:var(--pgrittutor-blue); padding:0; font-size:16px;" onclick="navigateTo('classes-page')">&lt; คลาสทั้งหมด</button><h1 style="text-align:center; flex-grow:1; font-size: 18px;">${data.className}</h1></div><div class="detail-tabs"><button id="tab-btn-schedule" class="tab-button" onclick="switchTab('schedule')">ตาราง</button><button id="tab-btn-students" class="tab-button" onclick="switchTab('students')">นักเรียน (${data.students.length})</button><button id="tab-btn-logs" class="tab-button" onclick="switchTab('logs')">ประวัติ</button></div><div id="tab-content-schedule" class="tab-content"><div class="list-group"><div class="list-item" style="display:block;"><h3>ตารางเรียนปัจจุบัน</h3><p id="current-schedule-display">${data.schedule || 'ยังไม่มีข้อมูล'}</p><input type="text" id="modal-schedule-edit" value="${data.schedule || ''}" style="margin-top:15px; margin-bottom: 5px;"><button onclick="updateClassSchedule('${data.classId}')">อัปเดตตาราง</button></div></div></div><div id="tab-content-students" class="tab-content"><div class="list-group" id="student-list-container">${data.students.map(renderStudentItem).join('') || '<div class="list-item"><p>ยังไม่มีนักเรียน</p></div>'}</div><div style="padding: 0 15px;"><button onclick="showAddStudentModal()">เพิ่มนักเรียน</button></div></div><div id="tab-content-logs" class="tab-content"><div class="list-group" id="log-list-container">${data.logs.map(renderLogItem).join('') || '<div class="list-item"><p>ยังไม่มีประวัติ</p></div>'}</div><div style="padding: 0 15px;"><button onclick="showAddLogModal()">เพิ่มประวัติการสอน</button></div></div>`;
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.detail-tabs .tab-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`tab-content-${tabName}`).classList.add('active');
+    }
     
+    function renderStudentItem(s) {
+        const typeBadge = s.type ? `<span class="status-badge ${s.type === 'สด' ? 'done' : 'future'}">${s.type}</span>` : '';
+        return `<div class="list-item" onclick="showEditStudentModal('${s.id}', \`${s.name}\`, '${s.type}')"><div><h3>${s.name}${typeBadge}</h3></div><span class="arrow">&gt;</span></div>`;
+    }
+
     function renderLogItem(log) {
         const d = new Date(log.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
         const statusMap = { 'เสร็จสิ้นแล้ว': 'done', 'งานในอนาคต': 'future', 'กำลังดำเนินการ': 'pending' };
         const statusClass = statusMap[log.status] || '';
         const statusBadge = log.status ? `<span class="status-badge ${statusClass}">${log.status}</span>` : '';
-        return `<div class="list-item" onclick="showEditLogModal('${log.id}', '${log.date}', \`${log.content}\`, '${log.status}')"><div><h3>${d}${statusBadge}</h3><p>${log.content}</p></div><span class="arrow">&gt;</span></div>`;
+        return `<div class="list-item" onclick="showEditLogModal('${log.id}', '${log.date}', \`${log.content}\`, '${log.status || ''}')"><div><h3>${d}${statusBadge}</h3><p>${log.content}</p></div><span class="arrow">&gt;</span></div>`;
     }
 
     const modal = document.getElementById('form-modal');
-    function showModal(content) { /* ... same as before ... */ }
-    function closeModal(event) { /* ... same as before ... */ }
+    function showModal(content) { modal.querySelector('#modal-container').innerHTML = content; modal.classList.add('active'); }
+    function closeModal(event) { if (event.target === modal || event.target.id === 'cancel-btn' || event.target.classList.contains('modal-overlay')) { modal.classList.remove('active'); } }
+
+    function showAddClassModal() { showModal(`<h2>เพิ่มคลาสใหม่</h2><input type="text" id="modal-className" placeholder="ชื่อคลาสเรียน"><input type="text" id="modal-schedule" placeholder="ตารางเรียน (เช่น จ. 17:00, พ. 18:00)"><button onclick="addClass()">เพิ่มคลาส</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function addClass() {
+        const className = document.getElementById('modal-className').value;
+        const schedule = document.getElementById('modal-schedule').value;
+        if (!className) return alert('กรุณาใส่ชื่อคลาส');
+        const newClass = await callGAS('addClass', { className, schedule });
+        if (newClass) {
+            APP_DATA.classes.push(newClass);
+            renderClassList();
+            closeModal({target:modal});
+        }
+    }
+
+    async function updateClassSchedule(classId) {
+        const newSchedule = document.getElementById('modal-schedule-edit').value;
+        await callGAS('updateClassSchedule', { classId, schedule: newSchedule });
+        APP_DATA.classes.find(c => c.classId === classId).schedule = newSchedule;
+        CURRENT_CLASS_DETAILS.schedule = newSchedule;
+        document.getElementById('current-schedule-display').textContent = newSchedule;
+        alert('อัปเดตตารางเรียนเรียบร้อย');
+    }
+
+    function showAddStudentModal() { showModal(`<h2>เพิ่มนักเรียน</h2><input type="text" id="modal-studentName" placeholder="ชื่อนักเรียน"><select id="modal-studentType"><option value="สด">เรียนห้องสด</option><option value="ออนไลน์">เรียนออนไลน์</option></select><button onclick="addStudent()">เพิ่มนักเรียน</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function addStudent() {
+        const studentName = document.getElementById('modal-studentName').value;
+        const studentType = document.getElementById('modal-studentType').value;
+        if (!studentName) return alert('กรุณาใส่ชื่อนักเรียน');
+        const newStudent = await callGAS('addStudent', { classId: CURRENT_CLASS_DETAILS.classId, studentName, studentType });
+        if (newStudent) {
+            if (!APP_DATA.students[CURRENT_CLASS_DETAILS.classId]) { APP_DATA.students[CURRENT_CLASS_DETAILS.classId] = []; }
+            APP_DATA.students[CURRENT_CLASS_DETAILS.classId].push(newStudent);
+            isDashboardStale = true;
+            loadClassDetails(CURRENT_CLASS_DETAILS.classId);
+            switchTab('students');
+            closeModal({target:modal});
+        }
+    }
+
+    function showEditStudentModal(id, name, type) { showModal(`<h2>แก้ไขข้อมูลนักเรียน</h2><input type="text" id="modal-studentName" value="${name}"><select id="modal-studentType"><option value="สด" ${type === 'สด' ? 'selected' : ''}>เรียนห้องสด</option><option value="ออนไลน์" ${type === 'ออนไลน์' ? 'selected' : ''}>เรียนออนไลน์</option></select><button onclick="updateStudent('${id}')">บันทึก</button><button class="btn-danger" style="margin-top:10px;" onclick="deleteStudent('${id}')">ลบนักเรียน</button><button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`); }
+    async function updateStudent(studentId) {
+        const newName = document.getElementById('modal-studentName').value;
+        const newType = document.getElementById('modal-studentType').value;
+        await callGAS('updateStudent', { studentId, newName, newType });
+        APP_DATA.students[CURRENT_CLASS_DETAILS.classId].find(s => s.id === studentId).name = newName;
+        APP_DATA.students[CURRENT_CLASS_DETAILS.classId].find(s => s.id === studentId).type = newType;
+        isDashboardStale = true;
+        loadClassDetails(CURRENT_CLASS_DETAILS.classId);
+        switchTab('students');
+        closeModal({target:modal});
+    }
+    
+    async function deleteStudent(studentId) {
+        if (!confirm('คุณแน่ใจหรือไม่ว่าจะลบนักเรียนคนนี้?')) return;
+        await callGAS('deleteStudent', { studentId });
+        APP_DATA.students[CURRENT_CLASS_DETAILS.classId] = APP_DATA.students[CURRENT_CLASS_DETAILS.classId].filter(s => s.id !== studentId);
+        isDashboardStale = true;
+        loadClassDetails(CURRENT_CLASS_DETAILS.classId);
+        switchTab('students');
+        closeModal({target:modal});
+    }
+
+    function showAddLogModal() {
+        showModal(`<h2>เพิ่มประวัติการสอน</h2>
+            <input type="date" id="modal-logDate" value="${new Date().toISOString().slice(0,10)}">
+            <textarea id="modal-logContent" placeholder="เนื้อหาที่สอน..."></textarea>
+            <select id="modal-logStatus">
+                <option value="เสร็จสิ้นแล้ว">เสร็จสิ้นแล้ว</option>
+                <option value="งานในอนาคต">งานในอนาคต</option>
+                <option value="กำลังดำเนินการ" selected>กำลังดำเนินการ</option>
+            </select>
+            <button onclick="addLog()">เพิ่มบันทึก</button>
+            <button id="cancel-btn" class="btn-secondary" style="margin-top:10px;">ยกเลิก</button>`);
+    }
 
     async function addLog() {
         const logDate = document.getElementById('modal-logDate').value;
@@ -181,7 +306,16 @@
         }
     }
     
-    // --- Dashboard Page ---
+    async function deleteLog(logId) {
+        if (!confirm('คุณแน่ใจหรือไม่ว่าจะลบรายการนี้?')) return;
+        await callGAS('deleteLog', { logId });
+        APP_DATA.logs[CURRENT_CLASS_DETAILS.classId] = APP_DATA.logs[CURRENT_CLASS_DETAILS.classId].filter(l => l.id !== logId);
+        isDashboardStale = true;
+        loadClassDetails(CURRENT_CLASS_DETAILS.classId);
+        switchTab('logs');
+        closeModal({target:modal});
+    }
+
     function loadDashboard() {
         if (!isDashboardStale) return;
         const allLogs = [];
@@ -191,14 +325,13 @@
         }
         CURRENT_DASHBOARD_LOGS = allLogs;
         renderDashboard();
-        filterDashboard('ทั้งหมด'); // แสดงทั้งหมดเป็นค่าเริ่มต้น
+        filterDashboard('ทั้งหมด');
         isDashboardStale = false;
     }
 
     function renderDashboard() {
         const page = document.getElementById('dashboard-content');
-        page.innerHTML = `
-            <div class="dashboard-filter-tabs">
+        page.innerHTML = `<div class="dashboard-filter-tabs">
                 <button class="filter-button active" onclick="filterDashboard('ทั้งหมด')">ทั้งหมด</button>
                 <button class="filter-button" onclick="filterDashboard('เสร็จสิ้นแล้ว')">เสร็จสิ้นแล้ว</button>
                 <button class="filter-button" onclick="filterDashboard('งานในอนาคต')">งานในอนาคต</button>
@@ -216,9 +349,9 @@
             ? CURRENT_DASHBOARD_LOGS 
             : CURRENT_DASHBOARD_LOGS.filter(log => log.status === status);
         
-        container.innerHTML = filteredLogs.map(renderDashboardLogItem).join('') || '<div class="list-item"><p>ไม่พบรายการ</p></div>';
+        container.innerHTML = filteredLogs.map(renderDashboardLogItem).join('') || '<div class="list-item" style="text-align:center; display:block;"><p>ไม่พบรายการ</p></div>';
     }
-
+    
     function renderDashboardLogItem(log) {
         const logDateFormatted = new Date(log.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
         const statusMap = { 'เสร็จสิ้นแล้ว': 'done', 'งานในอนาคต': 'future', 'กำลังดำเนินการ': 'pending' };
@@ -230,7 +363,19 @@
                 </div>`;
     }
 
-    // Other functions remain the same
+    function updateNavIcons() {
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(n => {
+            const icon = n.querySelector('img');
+            const defaultColor = '%238A8A8E';
+            const activeColor = '%2300008B';
+            const fillPattern = /fill='(%23[0-9A-Fa-f]{6})'/;
+            if (n.classList.contains('active')) {
+                icon.src = icon.src.replace(fillPattern, `fill='${activeColor}'`);
+            } else {
+                icon.src = icon.src.replace(fillPattern, `fill='${defaultColor}'`);
+            }
+        });
+    }
 </script>
 </body>
 </html>
