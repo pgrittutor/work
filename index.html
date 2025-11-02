@@ -177,6 +177,7 @@
     }
 
     function renderLogItem(log) {
+        // ✨ **แก้ไขจุดที่ 1:** เพิ่ม weekday: 'long' เข้าไป
         const d = new Date(log.date).toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
         const statusMap = { 'เสร็จสิ้นแล้ว': 'done', 'งานในอนาคต': 'future', 'กำลังดำเนินการ': 'pending' };
         const statusClass = statusMap[log.status] || '';
@@ -322,7 +323,6 @@
 
     function loadDashboard() {
         if (!isDashboardStale) {
-            // Even if not stale, we might need to re-render if sort/filter changed
             filterAndSortDashboard();
             return;
         }
@@ -374,4 +374,40 @@
         
         filteredLogs.sort((a, b) => {
             const dateA = new Date(a[currentSortBy] || 0);
-            const dateB = new Date(b
+            const dateB = new Date(b[currentSortBy] || 0);
+            return dateB - dateA;
+        });
+
+        const container = document.getElementById('dashboard-log-list');
+        container.innerHTML = filteredLogs.map(renderDashboardLogItem).join('') || '<div class="list-item" style="text-align:center; display:block;"><p>ไม่พบรายการ</p></div>';
+    }
+    
+    function renderDashboardLogItem(log) {
+        // ✨ **นี่คือจุดที่แก้ไข**
+        const logDateFormatted = new Date(log.date).toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+        const statusMap = { 'เสร็จสิ้นแล้ว': 'done', 'งานในอนาคต': 'future', 'กำลังดำเนินการ': 'pending' };
+        const statusClass = statusMap[log.status] || '';
+        const statusBadge = log.status ? `<span class="status-badge ${statusClass}">${log.status}</span>` : '';
+        return `<div class="dashboard-log-item">
+                    <h3>${logDateFormatted} - ${log.className}${statusBadge}</h3>
+                    <p>${log.content}</p>
+                    <small>แก้ไขล่าสุด: ${new Date(log.timestamp).toLocaleString('th-TH')}</small>
+                </div>`;
+    }
+
+    function updateNavIcons() {
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(n => {
+            const icon = n.querySelector('img');
+            const defaultColor = '%238A8A8E';
+            const activeColor = '%2300008B';
+            const fillPattern = /fill='(%23[0-9A-Fa-f]{6})'/;
+            if (n.classList.contains('active')) {
+                icon.src = icon.src.replace(fillPattern, `fill='${activeColor}'`);
+            } else {
+                icon.src = icon.src.replace(fillPattern, `fill='${defaultColor}'`);
+            }
+        });
+    }
+</script>
+</body>
+</html>
