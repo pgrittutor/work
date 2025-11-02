@@ -48,6 +48,19 @@
         .filter-button.active { background-color: var(--pgrittutor-blue); color: var(--pgrittutor-white); border-color: var(--pgrittutor-blue); }
         .sort-controls { display: flex; gap: 10px; } .sort-controls button { width: 50%; }
         .loader { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 15px 20px; border-radius: 8px; display: none; z-index: 1001; font-size: 14px; }
+        
+        /* ✨ CSS สำหรับ Toggle Switch */
+        .toggle-control { display: flex; align-items: center; justify-content: space-between; padding-top: 15px; border-top: 1px solid var(--pgrittutor-border); margin-top: 15px; }
+        .toggle-control label { font-size: 14px; color: var(--pgrittutor-dark-gray); }
+        .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .4s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: var(--status-done); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .slider.round { border-radius: 34px; }
+        .slider.round:before { border-radius: 50%; }
+
         @supports (padding-top: env(safe-area-inset-top)) { body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); } .page-header { padding-top: calc(10px + env(safe-area-inset-top)); } .bottom-nav { padding-bottom: env(safe-area-inset-bottom); } }
     </style>
 </head>
@@ -79,6 +92,7 @@
     let isDashboardStale = true;
     let currentFilterStatus = 'ทั้งหมด';
     let currentSortBy = 'date';
+    let hidePastLogs = true; // ✨ **เพิ่มตัวแปรสถานะ**
 
     window.onload = () => {
         document.querySelector('.logo-header').src = LOGO_URL;
@@ -177,7 +191,6 @@
     }
 
     function renderLogItem(log) {
-        // ✨ **แก้ไขจุดที่ 1:** เพิ่ม weekday: 'long' เข้าไป
         const d = new Date(log.date).toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
         const statusMap = { 'เสร็จสิ้นแล้ว': 'done', 'งานในอนาคต': 'future', 'กำลังดำเนินการ': 'pending' };
         const statusClass = statusMap[log.status] || '';
@@ -322,19 +335,17 @@
     }
 
     function loadDashboard() {
-        if (!isDashboardStale) {
-            filterAndSortDashboard();
-            return;
+        if (isDashboardStale) {
+            const allLogs = [];
+            for (const classId in APP_DATA.logs) {
+                const className = APP_DATA.classes.find(c => c.classId === classId)?.className || 'Unknown';
+                APP_DATA.logs[classId].forEach(log => { allLogs.push({ ...log, className }); });
+            }
+            CURRENT_DASHBOARD_LOGS = allLogs;
+            isDashboardStale = false;
         }
-        const allLogs = [];
-        for (const classId in APP_DATA.logs) {
-            const className = APP_DATA.classes.find(c => c.classId === classId)?.className || 'Unknown';
-            APP_DATA.logs[classId].forEach(log => { allLogs.push({ ...log, className }); });
-        }
-        CURRENT_DASHBOARD_LOGS = allLogs;
         renderDashboard();
         filterAndSortDashboard();
-        isDashboardStale = false;
     }
 
     function renderDashboard() {
@@ -350,6 +361,13 @@
                     <button id="sort-date-btn" class="filter-button" onclick="setSort('date')">เรียงตามวันที่สอน</button>
                     <button id="sort-timestamp-btn" class="filter-button" onclick="setSort('timestamp')">เรียงตามวันที่แก้ไข</button>
                 </div>
+                <div class="toggle-control">
+                    <label for="hide-past-toggle">ซ่อนโน้ตที่ผ่านมาแล้ว</label>
+                    <label class="switch">
+                        <input type="checkbox" id="hide-past-toggle" onchange="togglePastLogsFilter(this.checked)">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
             </div>
             <div class="list-group" id="dashboard-log-list"></div>`;
     }
@@ -364,26 +382,47 @@
         filterAndSortDashboard();
     }
 
+    // ✨ **เพิ่มฟังก์ชันสำหรับ Toggle Switch**
+    function togglePastLogsFilter(isChecked) {
+        hidePastLogs = isChecked;
+        filterAndSortDashboard();
+    }
+
     function filterAndSortDashboard() {
         document.querySelectorAll('.filter-button').forEach(btn => { btn.classList.toggle('active', btn.textContent === currentFilterStatus); });
         document.querySelectorAll('.sort-controls .filter-button').forEach(btn => { btn.classList.toggle('active', btn.id.includes(currentSortBy)); });
-
-        const filteredLogs = currentFilterStatus === 'ทั้งหมด' 
-            ? [...CURRENT_DASHBOARD_LOGS]
-            : CURRENT_DASHBOARD_LOGS.filter(log => log.status === currentFilterStatus);
         
-        filteredLogs.sort((a, b) => {
+        // ✨ **อัปเดตสถานะของ Toggle Switch**
+        const toggle = document.getElementById('hide-past-toggle');
+        if (toggle) { toggle.checked = hidePastLogs; }
+
+        let logsToDisplay = [...CURRENT_DASHBOARD_LOGS];
+
+        // ✨ **1. ฟิลเตอร์ตามวันที่ (ซ่อนอดีต)**
+        if (hidePastLogs) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            logsToDisplay = logsToDisplay.filter(log => new Date(log.date) >= today);
+        }
+
+        // ✨ **2. ฟิลเตอร์ตามสถานะ**
+        if (currentFilterStatus !== 'ทั้งหมด') {
+            logsToDisplay = logsToDisplay.filter(log => log.status === currentFilterStatus);
+        }
+        
+        // ✨ **3. เรียงลำดับ**
+        logsToDisplay.sort((a, b) => {
             const dateA = new Date(a[currentSortBy] || 0);
             const dateB = new Date(b[currentSortBy] || 0);
             return dateB - dateA;
         });
 
+        // 4. แสดงผล
         const container = document.getElementById('dashboard-log-list');
-        container.innerHTML = filteredLogs.map(renderDashboardLogItem).join('') || '<div class="list-item" style="text-align:center; display:block;"><p>ไม่พบรายการ</p></div>';
+        container.innerHTML = logsToDisplay.map(renderDashboardLogItem).join('') || '<div class="list-item" style="text-align:center; display:block;"><p>ไม่พบรายการ</p></div>';
     }
     
     function renderDashboardLogItem(log) {
-        // ✨ **นี่คือจุดที่แก้ไข**
         const logDateFormatted = new Date(log.date).toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
         const statusMap = { 'เสร็จสิ้นแล้ว': 'done', 'งานในอนาคต': 'future', 'กำลังดำเนินการ': 'pending' };
         const statusClass = statusMap[log.status] || '';
